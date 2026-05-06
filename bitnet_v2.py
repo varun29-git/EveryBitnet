@@ -41,20 +41,14 @@ class BitnetNeuronV2(Module):
         x_had = fast_hadamard_transform(x_padded)
         x_had = [xi * self.scale_h for xi in x_had]
         
-        # 3. Activation Quantization (Absmax to n-bits)
-        # For BitNet v2, this is typically 8-bit for pretraining, 4-bit for finetuning
+        # 3. Activation Quantization (Absmax to n-bits) with STE
         q_b = 2**(self.bits - 1) - 1
         gamma_x = max(abs(xi.data) for xi in x_had) + 1e-5
-        x_quant = [xi * (q_b / gamma_x) for xi in x_had]
+        x_quant = [(xi * (q_b / gamma_x)).ste_round() for xi in x_had]
         
-        # 4. Ternary Weight Quantization (1.58-bit)
+        # 4. Ternary Weight Quantization (1.58-bit) with STE
         gamma_w = sum(abs(wi.data) for wi in self.w) / len(self.w) + 1e-5
-        
-        def ternary_quant(v, g):
-            scaled = v.data / g
-            return round(max(-1, min(1, scaled)))
-            
-        w_ternary = [gamma_w * ternary_quant(wi, gamma_w) for wi in self.w]
+        w_ternary = [gamma_w * (wi / gamma_w).ste_round() for wi in self.w]
         
         # 5. Dot product in the Hadamard-transformed space
         return sum((wi * xi for wi, xi in zip(w_ternary, x_quant)), Value(0))
