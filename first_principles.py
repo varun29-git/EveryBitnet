@@ -46,20 +46,25 @@ class BitnetNeuron(Module):
         self.w = [Value(random.uniform(-1, 1)) for _ in range(nin)]
     
     def __call__(self, x):
-        # BitNet 1.58b weight quantization logic
-        # 1. Mean Centering
+        # 1. Activation Quantization (Absmax)
+        # We scale activations to the 8-bit range [-128, 127]
+        gamma = max(abs(xi.data) for xi in x) + 1e-5
+        x_quant = [xi * (127.0 / gamma) for xi in x]
+
+        # 2. BitNet 1.58b weight quantization logic
+        # Mean Centering
         alpha = sum(self.w) / len(self.w)
         w_centered = [wi - alpha for wi in self.w]
         
-        # 2. Scaling factor beta (using .data for absolute value as Value doesn't have __abs__)
+        # Scaling factor beta
         beta = sum(abs(wi.data) for wi in self.w) / len(self.w)
         
-        # 3. Quantization (using .data for sign as it's non-differentiable)
-        # In a more advanced engine, we would use Straight-Through Estimator (STE)
+        # Quantization to 1.58-bit {-1, 0, 1}
+        # In this simple implementation, we use sign for 1-bit {-1, 1}
         w_bin = [beta * (1 if wi.data > 0 else -1) for wi in w_centered]
         
-        # 4. Dot product with inputs
-        return sum((wi * xi for wi, xi in zip(w_bin, x)), Value(0))
+        # 3. Dot product with quantized inputs
+        return sum((wi * xi for wi, xi in zip(w_bin, x_quant)), Value(0))
 
     def parameters(self):
         return self.w
