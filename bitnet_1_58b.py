@@ -16,14 +16,8 @@ class BitnetNeuron158(Module):
         # gamma_w is the mean of absolute weight values
         gamma_w = sum(abs(wi.data) for wi in self.w) / len(self.w) + 1e-5
         
-        # Quantize weights to {-1, 0, 1}
-        # Formula: Round(Clip(w / gamma, -1, 1))
-        def ternary_quant(v, g):
-            scaled = v.data / g
-            return round(max(-1, min(1, scaled)))
-            
-        # These are the actual values used in the computation
-        w_ternary = [gamma_w * ternary_quant(wi, gamma_w) for wi in self.w]
+        # Quantize weights to {-1, 0, 1} with STE
+        w_ternary = [gamma_w * (wi / gamma_w).ste_round() for wi in self.w]
         
         # 3. Dot product with quantized activations and ternary weights
         return sum((wi * xi for wi, xi in zip(w_ternary, x_quant)), Value(0))
