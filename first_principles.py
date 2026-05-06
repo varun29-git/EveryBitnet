@@ -40,29 +40,31 @@ class ClassicNeuron(Module):
     return f"{'Tanh' if self.nonlin else 'Linear'}Neuron({len(self.w)})"
 
 
-class BitnetNeuron:
-    def __init__(self, nin):
-        self.w = [random.uniform(-1, 1) for _ in range(nin)]
-    
-    @staticmethod
-    def sign(arr):
-        return [1 if u > 0 else -1 for u in arr]
+class BitnetNeuron(Module):
+    def __init__(self, nin, **kwargs):
+        # Underlying weights are trainable Value objects
+        self.w = [Value(random.uniform(-1, 1)) for _ in range(nin)]
     
     def __call__(self, x):
-        # mean center
+        # BitNet 1.58b weight quantization logic
+        # 1. Mean Centering
         alpha = sum(self.w) / len(self.w)
         w_centered = [wi - alpha for wi in self.w]
         
-        # sign
-        s = BitnetNeuron.sign(w_centered)
+        # 2. Scaling factor beta (using .data for absolute value as Value doesn't have __abs__)
+        beta = sum(abs(wi.data) for wi in self.w) / len(self.w)
         
-        # scale
-        beta = sum(abs(wi) for wi in self.w) / len(self.w)
+        # 3. Quantization (using .data for sign as it's non-differentiable)
+        # In a more advanced engine, we would use Straight-Through Estimator (STE)
+        w_bin = [beta * (1 if wi.data > 0 else -1) for wi in w_centered]
         
-        # approximate weights
-        w_bin = [beta * si for si in s]
-        
-        # dot product
-        return sum(wi * xi for wi, xi in zip(w_bin, x))
+        # 4. Dot product with inputs
+        return sum((wi * xi for wi, xi in zip(w_bin, x)), Value(0))
+
+    def parameters(self):
+        return self.w
+
+    def __repr__(self):
+        return f"BitnetNeuron({len(self.w)})"
 
         
