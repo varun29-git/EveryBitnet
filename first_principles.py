@@ -14,19 +14,30 @@ Bitnet
 # but it can also be learned
 
 
-class ClassicNeuron:
-  def __init__(self, nin):
+class Module:
+    def zero_grad(self):
+        for p in self.parameters():
+            p.grad = 0
+            
+    def parameters(self):
+        return []
+
+class ClassicNeuron(Module):
+  def __init__(self, nin, nonlin=True):
     self.w = [Value(random.uniform(-1,1)) for _ in range(nin)]
     self.b = Value(random.uniform(-1,1))
+    self.nonlin = nonlin
 
   def __call__(self, x):
     # w * x + b
-    act = sum(wi*xi for wi, xi in zip(self.w,x)) + self.b
-    out = act.tanh()
-    return out
+    act = sum((wi*xi for wi, xi in zip(self.w, x)), self.b)
+    return act.tanh() if self.nonlin else act
   
   def parameters(self):
     return self.w + [self.b]
+
+  def __repr__(self):
+    return f"{'Tanh' if self.nonlin else 'Linear'}Neuron({len(self.w)})"
 
 
 class BitnetNeuron:
