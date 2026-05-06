@@ -59,9 +59,8 @@ class BitnetNeuron(Module):
         # Scaling factor beta
         beta = sum(abs(wi.data) for wi in self.w) / len(self.w)
         
-        # Quantization to 1.58-bit {-1, 0, 1}
-        # In this simple implementation, we use sign for 1-bit {-1, 1}
-        w_bin = [beta * (1 if wi.data > 0 else -1) for wi in w_centered]
+        # 3. Quantization with Straight-Through Estimator (STE)
+        w_bin = [beta * wi.ste_sign() for wi in w_centered]
         
         # Dot product with quantized inputs
         return sum((wi * xi for wi, xi in zip(w_bin, x_quant)), Value(0))
