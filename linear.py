@@ -2,7 +2,8 @@ from .first_principles import Module, ClassicNeuron as Neuron
 from .first_principles import BitnetNeuron as BN
 
 class Linear(Module):
-    def __init__(self, nin, nout, quant_type, **kwargs):
+    def __init__(self, nin, nout, quant_type="linear", **kwargs):
+        self.quant_type = quant_type
         neuron_cls = Neuron if (quant_type == "linear") else BN
         self.neurons = [neuron_cls(nin, **kwargs) for _ in range(nout)] 
         
@@ -14,4 +15,4 @@ class Linear(Module):
         return [p for n in self.neurons for p in n.parameters()]
     
     def __repr__(self):
-        return f"LinearLayer({len(self.neurons)})"
+        return f"Linear(nin={len(self.neurons[0].w)}, nout={len(self.neurons)}, type='{self.quant_type}')"
