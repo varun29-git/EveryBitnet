@@ -1,6 +1,6 @@
 from .first_principles import Module, ClassicNeuron as Neuron
 from .first_principles import BitnetNeuron as BN
-from .bitlinear import BitnetNeuron158 as BN158
+from .bitnet_1_58b import BitnetNeuron158 as BN158
 
 class Linear(Module):
     def __init__(self, nin, nout, quant_type="linear", **kwargs):
