@@ -96,3 +96,21 @@ class Value:
       self.grad += out.data * out.grad
     out._backward = _backward
     return out
+
+  def ste_sign(self):
+      """Straight-Through Estimator for Sign function."""
+      out = Value(1.0 if self.data >= 0 else -1.0, (self,), 'ste_sign')
+      def _backward():
+          # Identity gradient flow
+          self.grad += 1.0 * out.grad
+      out._backward = _backward
+      return out
+
+  def ste_round(self):
+      """Straight-Through Estimator for Round function."""
+      out = Value(round(self.data), (self,), 'ste_round')
+      def _backward():
+          # Identity gradient flow
+          self.grad += 1.0 * out.grad
+      out._backward = _backward
+      return out
