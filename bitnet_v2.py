@@ -22,7 +22,7 @@ def fast_hadamard_transform(x):
     return res
 
 class BitnetNeuronV2(Module):
-    def __init__(self, nin, bits=8, **kwargs):
+    def __init__(self, nin, bits=4, **kwargs):
         self.nin = nin
         self.bits = bits
         # Hadamard requires power of 2 dimensions
